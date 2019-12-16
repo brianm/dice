@@ -1,0 +1,4 @@
+numberOfDice = { ASCII_DIGIT+ }
+numberExpression = { numberOfDice ~ "d" }
+dieSize = { ASCII_DIGIT+ }
+expression = { numberExpression? ~ dieSize }
