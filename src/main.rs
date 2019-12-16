@@ -79,15 +79,3 @@ fn test_parse() {
         Err(e) => eprintln!("NOOOOOO {}", e),
     }
 }
-
-#[test]
-fn parse_thing() {
-    let expr = ExprParser::parse(Rule::expr, "3d6")
-        .unwrap()
-        .next()
-        .unwrap();
-    let mut inner_rules = expr.into_inner();
-    let num: u64 = inner_rules.next().unwrap().as_str().parse().unwrap();
-    let size: u64 = inner_rules.next().unwrap().as_str().parse().unwrap();
-    println!("{} D {}", &num, &size);
-}
