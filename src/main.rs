@@ -20,17 +20,42 @@ fn main() -> Result<()> {
     return Ok(());
 }
 
-/// Rolls dice
+/// Rolls dice using a small expression language:
+///
+/// The simplest expression is just a number, indicating to roll
+/// a die with that many sides, ie: `dice 20` to roll a 20 sided die.
+/// 
+/// If you want to roll multiple dice you can specify how many with a prefix, 
+/// for example three dice with six sides each would be `3d6`. 
+/// 
+/// You can then specify how many dice to keep or drop from the roll. To drop dice
+/// use `d` or `D` to drop low rolls or high rolls respectively. For example,
+/// `4d6d1` says to "roll four dice with six sides dropping the lowest die", whereas
+/// `2d20D1` says to "roll two dice with twenty sides each dropping the higher one".
+/// 
+/// The same thing works for keep with `k` and `K` saying to `k`eep the lowest or 
+/// `K`eep the highest.
+/// 
+/// Finally, you may add a constant modifier to the roll by appending `+` or `-` and
+/// a value, such as `4d6+1` `3d6-2` or `2d20K1+7`
+///
+/// You can also send multiple expressions: 
+/// 
+/// `dice 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1`
+///
+/// In summary:
+///
+///     3d6      3 x d6
+/// 
+///     4d6d1    3 x d6 dropping lowest
+/// 
+///     20+1     1 x d20 and add one to the result   
+/// 
+///     2d8K1-1  2 x d8 keep the higher and subtract 1
+/// 
 #[derive(StructOpt)]
 struct Cli {
-    /// A dice expression, such as `3d6`, `20`, or `4d6k3+2`
-    /// It is basically of the form `NdS` where N is the number of dice
-    /// and S is the size of the die. This can be suffixed with the
-    /// number of dice to drop (d) or keep (k), a la `4d6d1` to say
-    /// "roll four dice with six sides each and drop the lowest one" or `5d8k3`
-    /// to say "roll five dice with 8 sides each keeping the three highest".
-    /// The expression can also, finally, be suffixed with a constant value
-    /// to add or subtract, such as `2d100d1+7`
+    ///
     expression: Vec<String>,
 }
 
