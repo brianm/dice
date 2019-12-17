@@ -1,5 +1,5 @@
 numberOfDice = { ASCII_DIGIT+ }
-numberExpression = { numberOfDice ~ "d" }
+numberExpression = _{ numberOfDice ~ "d" }
 
 dieSize = { ASCII_DIGIT+ }
 
@@ -7,7 +7,7 @@ numberLowOfDiceToDrop = { ASCII_NONZERO_DIGIT+ }
 numberHighOfDiceToKeep = { ASCII_NONZERO_DIGIT+ }
 numberHighOfDiceToDrop = { ASCII_NONZERO_DIGIT+ }
 numberLowOfDiceToKeep = { ASCII_NONZERO_DIGIT+ }
-dropKeep = { 
+dropKeep = _{ 
     ("d" ~ numberLowOfDiceToDrop) | 
     ("D" ~ numberHighOfDiceToDrop) |
     ("K" ~ numberHighOfDiceToKeep) | 
@@ -16,6 +16,6 @@ dropKeep = {
 
 addValue = { ASCII_DIGIT+ }
 subtractValue = { ASCII_DIGIT+ }
-modifier = { ("+" ~ addValue) | ("-" ~subtractValue) }
+modifier = _{ ("+" ~ addValue) | ("-" ~subtractValue) }
 
 expression = { numberExpression? ~ dieSize ~ dropKeep? ~ modifier?}

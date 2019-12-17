@@ -24,35 +24,35 @@ fn main() -> Result<()> {
 ///
 /// The simplest expression is just a number, indicating to roll
 /// a die with that many sides, ie: `dice 20` to roll a 20 sided die.
-/// 
-/// If you want to roll multiple dice you can specify how many with a prefix, 
-/// for example three dice with six sides each would be `3d6`. 
-/// 
+///
+/// If you want to roll multiple dice you can specify how many with a prefix,
+/// for example three dice with six sides each would be `3d6`.
+///
 /// You can then specify how many dice to keep or drop from the roll. To drop dice
 /// use `d` or `D` to drop low rolls or high rolls respectively. For example,
 /// `4d6d1` says to "roll four dice with six sides dropping the lowest die", whereas
 /// `2d20D1` says to "roll two dice with twenty sides each dropping the higher one".
-/// 
-/// The same thing works for keep with `k` and `K` saying to `k`eep the lowest or 
+///
+/// The same thing works for keep with `k` and `K` saying to `k`eep the lowest or
 /// `K`eep the highest.
-/// 
+///
 /// Finally, you may add a constant modifier to the roll by appending `+` or `-` and
 /// a value, such as `4d6+1` `3d6-2` or `2d20K1+7`
 ///
-/// You can also send multiple expressions: 
-/// 
+/// You can also send multiple expressions:
+///
 /// `dice 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1`
 ///
 /// In summary:
 ///
 ///     3d6      3 x d6
-/// 
+///
 ///     4d6d1    3 x d6 dropping lowest
-/// 
+///
 ///     20+1     1 x d20 and add one to the result   
-/// 
+///
 ///     2d8K1-1  2 x d8 keep the higher and subtract 1
-/// 
+///
 #[derive(StructOpt)]
 struct Cli {
     ///
@@ -134,21 +134,18 @@ impl RollSpec {
     }
 }
 
+struct Roll {
+    rolls: Vec<i64>,
+    sum: i64,
+}
+
 impl fmt::Display for Roll {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}\t{}", self.rolls, self.sum)
     }
 }
 
-struct Roll {
-    rolls: Vec<i64>,
-    sum: i64,
-}
-
-fn parse<S>(it: S) -> Result<RollSpec>
-where
-    S: Into<String>,
-{
+fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
     let s: &str = &it.into();
     let expr = ExprParser::parse(Rule::expression, s)?
         .next()
@@ -166,45 +163,15 @@ where
 
     for part in expr.into_inner() {
         match part.as_rule() {
-            Rule::numberExpression => r.num = part.into_inner().next().unwrap().as_str().parse()?,
-            Rule::dieSize => {
-                r.size = part.as_str().parse()?;
-            }
-            Rule::dropKeep => {
-                let sub = part.into_inner().next().unwrap();
-                match sub.as_rule() {
-                    Rule::numberLowOfDiceToDrop => {
-                        r.drop_low = sub.as_str().parse()?;
-                    }
-                    Rule::numberLowOfDiceToKeep => {
-                        r.keep_low = sub.as_str().parse()?;
-                    }
-                    Rule::numberHighOfDiceToKeep => {
-                        r.keep_high = sub.as_str().parse()?;
-                    }
-                    Rule::numberHighOfDiceToDrop => {
-                        r.drop_high = sub.as_str().parse()?;
-                    }
-                    _ => {
-                        panic!("unexpected token! {}", sub);
-                    }
-                }
-            }
-            Rule::modifier => {
-                let sub = part.into_inner().next().unwrap();
-                match sub.as_rule() {
-                    Rule::addValue => r.modifier = sub.as_str().parse()?,
-                    Rule::subtractValue => {
-                        r.modifier = -1 * sub.as_str().parse::<i64>()?;
-                    }
-                    _ => {
-                        panic!("unexpected token! {}", sub);
-                    }
-                }
-            }
-            _ => {
-                panic!("unexpected token! {}", part);
-            }
+            Rule::numberOfDice => r.num = part.as_str().parse()?,
+            Rule::dieSize => r.size = part.as_str().parse()?,
+            Rule::numberLowOfDiceToDrop => r.drop_low = part.as_str().parse()?,
+            Rule::numberLowOfDiceToKeep => r.keep_low = part.as_str().parse()?,
+            Rule::numberHighOfDiceToKeep => r.keep_high = part.as_str().parse()?,
+            Rule::numberHighOfDiceToDrop => r.drop_high = part.as_str().parse()?,
+            Rule::addValue => r.modifier = part.as_str().parse()?,
+            Rule::subtractValue => r.modifier = -1 * part.as_str().parse::<i64>()?,
+            _ => panic!("unexpected token! {}", part),
         }
     }
 
