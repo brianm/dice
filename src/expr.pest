@@ -3,15 +3,15 @@ numberExpression = _{ numberOfDice ~ "d" }
 
 dieSize = { ASCII_DIGIT+ }
 
-numberLowOfDiceToDrop = { ASCII_NONZERO_DIGIT+ }
-numberHighOfDiceToKeep = { ASCII_NONZERO_DIGIT+ }
-numberHighOfDiceToDrop = { ASCII_NONZERO_DIGIT+ }
-numberLowOfDiceToKeep = { ASCII_NONZERO_DIGIT+ }
+numberOfLowDiceToDrop = { ASCII_NONZERO_DIGIT+ }
+numberOfHighDiceToKeep = { ASCII_NONZERO_DIGIT+ }
+numberOfHighDiceToDrop = { ASCII_NONZERO_DIGIT+ }
+numberOfLowDiceToKeep = { ASCII_NONZERO_DIGIT+ }
 dropKeep = _{ 
-    ("d" ~ numberLowOfDiceToDrop) | 
-    ("D" ~ numberHighOfDiceToDrop) |
-    ("K" ~ numberHighOfDiceToKeep) | 
-    ("k" ~ numberLowOfDiceToKeep) 
+    ("d" ~ numberOfLowDiceToDrop) | 
+    ("D" ~ numberOfHighDiceToDrop) |
+    ("k" ~ numberOfHighDiceToKeep) | 
+    ("K" ~ numberOfLowDiceToKeep) 
 }
 
 addValue = { ASCII_DIGIT+ }

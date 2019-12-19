@@ -1,5 +1,7 @@
 use anyhow::Result;
 use pest;
+use pest::Parser;
+use proptest::prelude::*;
 use rand;
 use rand::Rng;
 use std::fmt;
@@ -7,7 +9,6 @@ use structopt::StructOpt;
 
 #[macro_use]
 extern crate pest_derive;
-use pest::Parser;
 
 fn main() -> Result<()> {
     let args = Cli::from_args();
@@ -18,6 +19,19 @@ fn main() -> Result<()> {
     }
 
     return Ok(());
+}
+
+fn roll_die(size: u64) -> u64 {
+    return rand::thread_rng().gen_range(1, size + 1);
+}
+
+proptest! {
+    #[test]
+    fn test_roll_sizes(size in 1..10000000) {
+        let rs = roll_die(size as u64);
+        assert!(rs >= 1);
+        assert!(rs <= size as u64);
+    }
 }
 
 /// Rolls dice using a small expression language:
@@ -33,8 +47,11 @@ fn main() -> Result<()> {
 /// `4d6d1` says to "roll four dice with six sides dropping the lowest die", whereas
 /// `2d20D1` says to "roll two dice with twenty sides each dropping the higher one".
 ///
-/// The same thing works for keep with `k` and `K` saying to `k`eep the lowest or
-/// `K`eep the highest.
+/// The same thing works for keep with `k` and `K`, with `k` meaning to keep higher
+/// rolls and `K` to keep lower rolls. This is different from `d` and `D`. Basically
+/// it defaults (lower case) to the belief you want high rolls, therefore that is
+/// easier to type (no need for the `shift` to get capital) :-) If you find it annoying
+/// to use, let me know and I'll consider changing it in a future version.
 ///
 /// Finally, you may add a constant modifier to the roll by appending `+` or `-` and
 /// a value, such as `4d6+1` `3d6-2` or `2d20K1+7`
@@ -55,17 +72,9 @@ fn main() -> Result<()> {
 ///
 #[derive(StructOpt)]
 struct Cli {
-    ///
+    /// Roll expressions, ie `4d6k3 4d6d1`
     expression: Vec<String>,
 }
-
-fn roll_die(size: u64) -> u64 {
-    return rand::thread_rng().gen_range(1, size + 1);
-}
-
-#[derive(Parser)]
-#[grammar = "expr.pest"]
-pub struct ExprParser;
 
 #[derive(Debug)]
 struct RollSpec {
@@ -145,6 +154,10 @@ impl fmt::Display for Roll {
     }
 }
 
+#[derive(Parser)]
+#[grammar = "expr.pest"]
+pub struct ExprParser;
+
 fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
     let s: &str = &it.into();
     let expr = ExprParser::parse(Rule::expression, s)?
@@ -165,10 +178,10 @@ fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
         match part.as_rule() {
             Rule::numberOfDice => r.num = part.as_str().parse()?,
             Rule::dieSize => r.size = part.as_str().parse()?,
-            Rule::numberLowOfDiceToDrop => r.drop_low = part.as_str().parse()?,
-            Rule::numberLowOfDiceToKeep => r.keep_low = part.as_str().parse()?,
-            Rule::numberHighOfDiceToKeep => r.keep_high = part.as_str().parse()?,
-            Rule::numberHighOfDiceToDrop => r.drop_high = part.as_str().parse()?,
+            Rule::numberOfLowDiceToDrop => r.drop_low = part.as_str().parse()?,
+            Rule::numberOfLowDiceToKeep => r.keep_low = part.as_str().parse()?,
+            Rule::numberOfHighDiceToKeep => r.keep_high = part.as_str().parse()?,
+            Rule::numberOfHighDiceToDrop => r.drop_high = part.as_str().parse()?,
             Rule::addValue => r.modifier = part.as_str().parse()?,
             Rule::subtractValue => r.modifier = -1 * part.as_str().parse::<i64>()?,
             _ => panic!("unexpected token! {}", part),
@@ -183,5 +196,30 @@ fn test_parse() {
     match parse("3d6") {
         Ok(r) => println!("roll: {}", r),
         Err(e) => eprintln!("NOOOOOO {}", e),
+    }
+}
+
+mod test {
+    use super::*;
+    //                             7    d   4     d2       k1         -7
+    const EXPR_PATTERN: &str = "[1-9]{1}d[1-9]((d[1-9])|(k[1-9]))?(-[1-9])?";
+
+    #[test]
+    fn test_parse_garbage() {
+        match parse("3d8*2") {
+                Ok(_r) => assert!(1+1 == 3),
+                Err(_e) => assert!(1+2 == 3),
+            }
+    }
+
+    proptest! {
+        #[test]
+        fn test_various_parses(expr in EXPR_PATTERN) {
+            match parse(expr) {
+                Ok(_r) => assert!(1+1 == 2),
+                Err(_e) => assert!(1+2 == 2),
+            }
+
+        }
     }
 }
