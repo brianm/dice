@@ -37,7 +37,7 @@ proptest! {
 /// Rolls dice using a small expression language:
 ///
 /// The simplest expression is just a number, indicating to roll
-/// a die with that many sides, ie: `dice 20` to roll a 20 sided die.
+/// a die with that many sides, ie: `dice 20` or `dice d20` to roll a 20 sided die.
 ///
 /// If you want to roll multiple dice you can specify how many with a prefix,
 /// for example three dice with six sides each would be `3d6`.
