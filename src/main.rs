@@ -34,7 +34,7 @@ proptest! {
     }
 }
 
-/// Rolls dice using a small expression language:
+/// # Rolls dice using a small expression language:
 ///
 /// The simplest expression is just a number, indicating to roll
 /// a die with that many sides, ie: `dice 20` or `dice d20` to roll a 20 sided die.
