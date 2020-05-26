@@ -1,5 +1,5 @@
 numberOfDice = { ASCII_DIGIT+ }
-numberExpression = _{ numberOfDice ~ "d" }
+numberExpression = _{ numberOfDice? ~ "d" }
 
 dieSize = { ASCII_DIGIT+ }
 
@@ -17,5 +17,6 @@ dropKeep = _{
 addValue = { ASCII_DIGIT+ }
 subtractValue = { ASCII_DIGIT+ }
 modifier = _{ ("+" ~ addValue) | ("-" ~subtractValue) }
+junk = { ANY+ }
 
-expression = { numberExpression? ~ dieSize ~ dropKeep? ~ modifier?}
+expression = { numberExpression? ~ dieSize ~ dropKeep? ~ modifier? ~ junk?}

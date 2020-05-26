@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use pest;
 use pest::Parser;
 use proptest::prelude::*;
@@ -184,6 +184,7 @@ fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
             Rule::numberOfHighDiceToDrop => r.drop_high = part.as_str().parse()?,
             Rule::addValue => r.modifier = part.as_str().parse()?,
             Rule::subtractValue => r.modifier = -1 * part.as_str().parse::<i64>()?,
+            Rule::junk => bail!("Unexpected input in {}: '{}'", s, part.as_str()),
             _ => panic!("unexpected token! {}", part),
         }
     }
@@ -191,18 +192,33 @@ fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
     return Ok(r);
 }
 
-#[test]
-fn test_parse() {
-    match parse("3d6") {
-        Ok(r) => println!("roll: {}", r),
-        Err(e) => eprintln!("NOOOOOO {}", e),
-    }
-}
-
 mod test {
     use super::*;
-    //                             7    d   4     d2       k1         -7
-    const EXPR_PATTERN: &str = "[1-9]{1}d[1-9]((d[1-9])|(k[1-9]))?(-[1-9])?";
+
+    #[test]
+    fn test_parse_3d6() {
+        match parse("3d6") {
+            Ok(r) => println!("roll: {}", r),
+            Err(e) => eprintln!("NOOOOOO {}", e),
+        }
+    }
+
+    #[test]
+    fn test_parse_d6() {
+        match parse("d6") {
+            Ok(r) => println!("roll: {}", r),
+            Err(e) => eprintln!("NOOOOOO {}", e),
+        }
+    }
+
+    #[test]
+    fn test_parse_6() {
+        match parse("6") {
+            Ok(r) => println!("roll: {}", r),
+            Err(e) => eprintln!("NOOOOOO {}", e),
+        }
+    }
+    
 
     #[test]
     fn test_parse_garbage() {
@@ -212,7 +228,10 @@ mod test {
             }
     }
 
-    proptest! {
+    #[allow(dead_code)] // used in proptest, which fools the linter
+    const EXPR_PATTERN: &str = "[1-9]?{1}d[1-9]((d[1-9])|(k[1-9]))?(-[1-9])?";
+    proptest! {        
+
         #[test]
         fn test_various_parses(expr in EXPR_PATTERN) {
             match parse(expr) {
