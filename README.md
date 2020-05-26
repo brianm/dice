@@ -27,11 +27,14 @@ You can also send multiple expressions:
 `dice 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1 4d6d1`
 
 In summary:
+
+```
     d20     1 x d20
     3d6     3 x d6
     4d6d1   3 x d6 dropping lowest
     20+1    1 x d20 and add one to the result   
     2d8K1-1 2 x d8 keep the higher and subtract 1
+```
 
 Trivial die rolling expression parser, exists primarily to play with
 [pest](https://pest.rs/) and because my son wanted one :-)
