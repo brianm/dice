@@ -13,16 +13,43 @@ extern crate pest_derive;
 fn main() -> Result<()> {
     let args = Cli::from_args();
 
-    for roll in &args.expression {
-        let r = parse(roll)?;
-        println!("{}\t{}", r, r.roll())
+    if args.expression.len() == 0 {
+        // start up the REPL
+        let config = rustyline::Config::builder()
+            .history_ignore_space(true)
+            .completion_type(rustyline::CompletionType::List)
+            .edit_mode(rustyline::EditMode::Emacs)
+            .output_stream(rustyline::OutputStreamType::Stdout)
+            .build();
+        let mut rl = rustyline::Editor::<()>::with_config(config);
+        loop {
+            let readline = rl.readline(">> ");
+            match readline {
+                Ok(line) => {
+                    if &line == "exit" {
+                        return Ok(());
+                    }
+                    rl.add_history_entry(&line);
+                    line.split(char::is_whitespace)
+                        .filter_map(|s| parse(s).ok())
+                        .for_each(|r| println!("{}\t{}", r, r.roll()));
+                }
+                Err(rustyline::error::ReadlineError::Eof) => return Ok(()),
+                Err(e) => anyhow::bail!(e),
+            }
+        }
+    } else {
+        for roll in &args.expression {
+            let r = parse(roll)?;
+            println!("{}\t{}", r, r.roll())
+        }
     }
 
     return Ok(());
 }
 
 fn roll_die(size: u64) -> u64 {
-    return rand::thread_rng().gen_range(1, size + 1);
+    return rand::thread_rng().gen_range(1..=size);
 }
 
 proptest! {
@@ -218,19 +245,18 @@ mod test {
             Err(e) => eprintln!("NOOOOOO {}", e),
         }
     }
-    
 
     #[test]
     fn test_parse_garbage() {
         match parse("3d8*2") {
-                Ok(_r) => assert!(1+1 == 3),
-                Err(_e) => assert!(1+2 == 3),
-            }
+            Ok(_r) => assert!(1 + 1 == 3),
+            Err(_e) => assert!(1 + 2 == 3),
+        }
     }
 
     #[allow(dead_code)] // used in proptest, which fools the linter
     const EXPR_PATTERN: &str = "[1-9]?{1}d[1-9]((d[1-9])|(k[1-9]))?(-[1-9])?";
-    proptest! {        
+    proptest! {
 
         #[test]
         fn test_various_parses(expr in EXPR_PATTERN) {
