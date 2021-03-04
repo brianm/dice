@@ -3,10 +3,10 @@ numberExpression = _{ numberOfDice? ~ "d" }
 
 dieSize = { ASCII_DIGIT+ }
 
-numberOfLowDiceToDrop = { ASCII_NONZERO_DIGIT+ }
-numberOfHighDiceToKeep = { ASCII_NONZERO_DIGIT+ }
-numberOfHighDiceToDrop = { ASCII_NONZERO_DIGIT+ }
-numberOfLowDiceToKeep = { ASCII_NONZERO_DIGIT+ }
+numberOfLowDiceToDrop = { ASCII_DIGIT+ }
+numberOfHighDiceToKeep = { ASCII_DIGIT+ }
+numberOfHighDiceToDrop = { ASCII_DIGIT+ }
+numberOfLowDiceToKeep = { ASCII_DIGIT+ }
 dropKeep = _{ 
     ("d" ~ numberOfLowDiceToDrop) | 
     ("D" ~ numberOfHighDiceToDrop) |
