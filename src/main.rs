@@ -6,6 +6,7 @@ use rand;
 use rand::Rng;
 use std::fmt;
 use structopt::StructOpt;
+use rayon::prelude::*;
 
 #[macro_use]
 extern crate pest_derive;
@@ -24,15 +25,16 @@ fn main() -> Result<()> {
         let mut rl = rustyline::Editor::<()>::with_config(config);
         println!("dice {0}", env!("CARGO_PKG_VERSION"));
         println!("enter 'help' for help, 'exit' to exit");
-        loop {            
-            let readline = rl.readline(">> ");            
+        loop {
+            let readline = rl.readline(">> ");
             match readline {
-                Ok(line) => {                    
+                Ok(line) => {
                     let line = line.trim();
                     match line.as_ref() {
                         "exit" => return Ok(()),
                         "help" | "?" => {
-                            println!("`exit` or Contrl-d to exit
+                            println!(
+                                "`exit` or Contrl-d to exit
 `help` to see this help
 
 Exit and run `dice -h` for the full help, including an expanded
@@ -43,15 +45,16 @@ Examples:
     4d6d1    3 x d6 dropping lowest
     20+1     1 x d20 and add one to the result   
     2d8K1-1  2 x d8 keep the lower and subtract 1
-");
+"
+                            );
                         }
                         _ => {
                             rl.add_history_entry(line);
                             line.split(char::is_whitespace)
                                 .filter_map(|s| parse(s).ok())
-                                .for_each(|r| println!("{}\t{}", r, r.roll()));
+                                .for_each(|r| args.print(&r, &r.roll()));
                         }
-                    }                                       
+                    }
                 }
                 Err(rustyline::error::ReadlineError::Eof) => return Ok(()),
                 Err(e) => anyhow::bail!(e),
@@ -60,7 +63,7 @@ Examples:
     } else {
         for roll in &args.expression {
             let r = parse(roll)?;
-            println!("{}\t{}", r, r.roll())
+            args.print(&r, &r.roll());
         }
     }
 
@@ -120,8 +123,21 @@ proptest! {
 ///
 #[derive(StructOpt)]
 struct Cli {
+    /// Quiet output (just the result)
+    #[structopt(short, long)]
+    quiet: bool,
     /// Roll expressions, ie `4d6k3 4d6d1`
     expression: Vec<String>,
+}
+
+impl Cli {
+    fn print(&self, spec: &RollSpec, roll: &Roll) {
+        if self.quiet {
+            println!("{}", roll.sum)
+        } else {
+            println!("{}\t{}", spec, roll)
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -161,30 +177,27 @@ impl fmt::Display for RollSpec {
 
 impl RollSpec {
     fn roll(&self) -> Roll {
-        let mut rolls = vec![];
-
-        for _i in 0..self.num {
-            let rv = roll_die(self.size as u64);
-            rolls.push(rv as i64);
-        }
-        rolls.sort();
-        rolls.reverse();
+        let mut rolls: Vec<i64> = (0..self.num)
+            .into_par_iter()
+            .map(|_| roll_die(self.size as u64) as i64)
+            .collect();
+        rolls.par_sort();        
 
         // now that we have the rolls, figure out which to keep
 
         let range = if self.keep_high != 0 {
-            0..self.keep_high
+            self.num - self.keep_high..self.num
         } else if self.drop_low != 0 {
-            0..self.num - self.drop_low
+            self.drop_low..self.num
         } else if self.drop_high != 0 {
-            self.drop_high..self.num - self.drop_low
+            0..self.num - self.drop_high
         } else if self.keep_low != 0 {
-            rolls.len() - self.keep_low..self.num - self.drop_low
+            0..self.keep_low
         } else {
             0..self.num
         };
 
-        let mut sum = rolls[range].iter().sum();
+        let mut sum = rolls[range].par_iter().sum();
         sum += self.modifier;
 
         return Roll { rolls, sum };
