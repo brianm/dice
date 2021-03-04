@@ -1,6 +1,6 @@
 [package]
 name = "dice"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Brian McCallister <brianm@skife.org>"]
 edition = "2018"
 
@@ -16,3 +16,4 @@ anyhow = "1.0.25"
 exitfailure = "0.5.1"
 proptest = "1.0.0"
 rustyline = "7.1.0"
+clap = "2.33.3"

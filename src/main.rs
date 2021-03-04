@@ -22,17 +22,36 @@ fn main() -> Result<()> {
             .output_stream(rustyline::OutputStreamType::Stdout)
             .build();
         let mut rl = rustyline::Editor::<()>::with_config(config);
-        loop {
-            let readline = rl.readline(">> ");
+        println!("dice {0}", env!("CARGO_PKG_VERSION"));
+        println!("enter 'help' for help, 'exit' to exit");
+        loop {            
+            let readline = rl.readline(">> ");            
             match readline {
-                Ok(line) => {
-                    if &line == "exit" {
-                        return Ok(());
-                    }
-                    rl.add_history_entry(&line);
-                    line.split(char::is_whitespace)
-                        .filter_map(|s| parse(s).ok())
-                        .for_each(|r| println!("{}\t{}", r, r.roll()));
+                Ok(line) => {                    
+                    let line = line.trim();
+                    match line.as_ref() {
+                        "exit" => return Ok(()),
+                        "help" | "?" => {
+                            println!("`exit` or Contrl-d to exit
+`help` to see this help
+
+Exit and run `dice -h` for the full help, including an expanded
+explanation of the expression language.
+
+Examples:
+    3d6      3 x d6
+    4d6d1    3 x d6 dropping lowest
+    20+1     1 x d20 and add one to the result   
+    2d8K1-1  2 x d8 keep the lower and subtract 1
+");
+                        }
+                        _ => {
+                            rl.add_history_entry(line);
+                            line.split(char::is_whitespace)
+                                .filter_map(|s| parse(s).ok())
+                                .for_each(|r| println!("{}\t{}", r, r.roll()));
+                        }
+                    }                                       
                 }
                 Err(rustyline::error::ReadlineError::Eof) => return Ok(()),
                 Err(e) => anyhow::bail!(e),
@@ -69,6 +88,8 @@ proptest! {
 /// If you want to roll multiple dice you can specify how many with a prefix,
 /// for example three dice with six sides each would be `3d6`.
 ///
+/// Run without any expressions to enter interactive mode.
+///
 /// You can then specify how many dice to keep or drop from the roll. To drop dice
 /// use `d` or `D` to drop low rolls or high rolls respectively. For example,
 /// `4d6d1` says to "roll four dice with six sides dropping the lowest die", whereas
@@ -95,7 +116,7 @@ proptest! {
 ///
 ///     20+1     1 x d20 and add one to the result   
 ///
-///     2d8K1-1  2 x d8 keep the higher and subtract 1
+///     2d8K1-1  2 x d8 keep the lower and subtract 1
 ///
 #[derive(StructOpt)]
 struct Cli {
