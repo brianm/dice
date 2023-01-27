@@ -20,9 +20,9 @@ fn main() -> Result<()> {
             .history_ignore_space(true)
             .completion_type(rustyline::CompletionType::List)
             .edit_mode(rustyline::EditMode::Emacs)
-            .output_stream(rustyline::OutputStreamType::Stdout)
+            // .output_stream(rustyline::OutputStreamType::Stdout)
             .build();
-        let mut rl = rustyline::Editor::<()>::with_config(config);
+        let mut rl = rustyline::Editor::<()>::with_config(config)?;
         println!("dice {0}", env!("CARGO_PKG_VERSION"));
         println!("enter 'help' for help, 'exit' to exit");
         loop {
