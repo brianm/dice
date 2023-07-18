@@ -4,9 +4,10 @@ use pest::Parser;
 use proptest::prelude::*;
 use rand;
 use rand::Rng;
+use rayon::prelude::*;
+use rustyline::DefaultEditor;
 use std::fmt;
 use structopt::StructOpt;
-use rayon::prelude::*;
 
 #[macro_use]
 extern crate pest_derive;
@@ -16,13 +17,7 @@ fn main() -> Result<()> {
 
     if args.expression.len() == 0 {
         // start up the REPL
-        let config = rustyline::Config::builder()
-            .history_ignore_space(true)
-            .completion_type(rustyline::CompletionType::List)
-            .edit_mode(rustyline::EditMode::Emacs)
-            // .output_stream(rustyline::OutputStreamType::Stdout)
-            .build();
-        let mut rl = rustyline::Editor::<()>::with_config(config)?;
+        let mut rl = DefaultEditor::new()?;
         println!("dice {0}", env!("CARGO_PKG_VERSION"));
         println!("enter 'help' for help, 'exit' to exit");
         loop {
@@ -49,7 +44,7 @@ Examples:
                             );
                         }
                         _ => {
-                            rl.add_history_entry(line);
+                            rl.add_history_entry(line)?;
                             line.split(char::is_whitespace)
                                 .filter_map(|s| parse(s).ok())
                                 .for_each(|r| args.print(&r, &r.roll()));
@@ -181,7 +176,7 @@ impl RollSpec {
             .into_par_iter()
             .map(|_| roll_die(self.size as u64) as i64)
             .collect();
-        rolls.par_sort();        
+        rolls.par_sort();
 
         // now that we have the rolls, figure out which to keep
 
