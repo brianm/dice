@@ -7,13 +7,14 @@ use rand::Rng;
 use rayon::prelude::*;
 use rustyline::DefaultEditor;
 use std::fmt;
-use structopt::StructOpt;
+use clap::Parser as ClapParser;
+
 
 #[macro_use]
 extern crate pest_derive;
 
 fn main() -> Result<()> {
-    let args = Cli::from_args();
+    let args = Cli::parse();
 
     if args.expression.len() == 0 {
         // start up the REPL
@@ -116,7 +117,10 @@ proptest! {
 ///
 ///     2d8K1-1  2 x d8 keep the lower and subtract 1
 ///
-#[derive(StructOpt)]
+#[derive(ClapParser)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+
 struct Cli {
     /// Quiet output (just the result)
     #[structopt(short, long)]
