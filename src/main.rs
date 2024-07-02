@@ -1,4 +1,5 @@
 use anyhow::{bail, Result};
+use clap::Parser as ClapParser;
 use pest;
 use pest::Parser;
 use proptest::prelude::*;
@@ -7,8 +8,6 @@ use rand::Rng;
 use rayon::prelude::*;
 use rustyline::DefaultEditor;
 use std::fmt;
-use clap::Parser as ClapParser;
-
 
 #[macro_use]
 extern crate pest_derive;
@@ -39,7 +38,7 @@ explanation of the expression language.
 Examples:
     3d6      3 x d6
     4d6d1    3 x d6 dropping lowest
-    20+1     1 x d20 and add one to the result   
+    20+1     1 x d20 and add one to the result
     2d8K1-1  2 x d8 keep the lower and subtract 1
 "
                             );
@@ -113,7 +112,7 @@ proptest! {
 ///
 ///     4d6d1    3 x d6 dropping lowest
 ///
-///     20+1     1 x d20 and add one to the result   
+///     20+1     1 x d20 and add one to the result
 ///
 ///     2d8K1-1  2 x d8 keep the lower and subtract 1
 ///
@@ -236,14 +235,14 @@ fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
 
     for part in expr.into_inner() {
         match part.as_rule() {
-            Rule::numberOfDice => r.num = part.as_str().parse()?,
-            Rule::dieSize => r.size = part.as_str().parse()?,
-            Rule::numberOfLowDiceToDrop => r.drop_low = part.as_str().parse()?,
-            Rule::numberOfLowDiceToKeep => r.keep_low = part.as_str().parse()?,
-            Rule::numberOfHighDiceToKeep => r.keep_high = part.as_str().parse()?,
-            Rule::numberOfHighDiceToDrop => r.drop_high = part.as_str().parse()?,
-            Rule::addValue => r.modifier = part.as_str().parse()?,
-            Rule::subtractValue => r.modifier = -1 * part.as_str().parse::<i64>()?,
+            Rule::n_dice => r.num = part.as_str().parse()?,
+            Rule::die_size => r.size = part.as_str().parse()?,
+            Rule::n_low_to_drop => r.drop_low = part.as_str().parse()?,
+            Rule::n_low_to_keep => r.keep_low = part.as_str().parse()?,
+            Rule::n_high_to_keep => r.keep_high = part.as_str().parse()?,
+            Rule::n_high_to_drop => r.drop_high = part.as_str().parse()?,
+            Rule::add_value => r.modifier = part.as_str().parse()?,
+            Rule::subtract_value => r.modifier = -1 * part.as_str().parse::<i64>()?,
             Rule::junk => bail!("Unexpected input in {}: '{}'", s, part.as_str()),
             _ => panic!("unexpected token! {}", part),
         }

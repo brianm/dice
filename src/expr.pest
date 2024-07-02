@@ -1,22 +1,23 @@
-numberOfDice = { ASCII_DIGIT+ }
-numberExpression = _{ numberOfDice? ~ "d" }
+n_dice   =  { ASCII_DIGIT+ }
+num_expr = _{ n_dice? ~ "d" }
 
-dieSize = { ASCII_DIGIT+ }
+die_size = { ASCII_DIGIT+ }
 
-numberOfLowDiceToDrop = { ASCII_DIGIT+ }
-numberOfHighDiceToKeep = { ASCII_DIGIT+ }
-numberOfHighDiceToDrop = { ASCII_DIGIT+ }
-numberOfLowDiceToKeep = { ASCII_DIGIT+ }
-dropKeep = _{ 
-    ("d" ~ numberOfLowDiceToDrop) | 
-    ("D" ~ numberOfHighDiceToDrop) |
-    ("k" ~ numberOfHighDiceToKeep) | 
-    ("K" ~ numberOfLowDiceToKeep) 
+n_low_to_drop  = { ASCII_DIGIT+ }
+n_high_to_keep = { ASCII_DIGIT+ }
+n_high_to_drop = { ASCII_DIGIT+ }
+n_low_to_keep  = { ASCII_DIGIT+ }
+
+drop_keep = _{
+    ("d" ~ n_low_to_drop)
+  | ("D" ~ n_high_to_drop)
+  | ("k" ~ n_high_to_keep)
+  | ("K" ~ n_low_to_keep)
 }
 
-addValue = { ASCII_DIGIT+ }
-subtractValue = { ASCII_DIGIT+ }
-modifier = _{ ("+" ~ addValue) | ("-" ~subtractValue) }
-junk = { ANY+ }
+add_value      =  { ASCII_DIGIT+ }
+subtract_value =  { ASCII_DIGIT+ }
+modifier       = _{ ("+" ~ add_value) | ("-" ~ subtract_value) }
+junk           =  { ANY+ }
 
-expression = { numberExpression? ~ dieSize ~ dropKeep? ~ modifier? ~ junk?}
+expression = { num_expr? ~ die_size ~ drop_keep? ~ modifier? ~ junk? }
