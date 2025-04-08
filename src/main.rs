@@ -1,5 +1,5 @@
-use anyhow::{bail, Result};
-use clap::Parser as ClapParser;
+use anyhow::Result;
+use clap::{CommandFactory, Parser as ClapParser};
 use pest;
 use pest::Parser;
 use proptest::prelude::*;
@@ -14,7 +14,6 @@ extern crate pest_derive;
 
 fn main() -> Result<()> {
     let args = Cli::parse();
-
     if args.expression.len() == 0 {
         // start up the REPL
         let mut rl = DefaultEditor::new()?;
@@ -28,25 +27,21 @@ fn main() -> Result<()> {
                     match line.as_ref() {
                         "exit" => return Ok(()),
                         "help" | "?" => {
-                            println!(
-                                "`exit` or Contrl-d to exit
-`help` to see this help
-
-Exit and run `dice -h` for the full help, including an expanded
-explanation of the expression language.
-
-Examples:
-    3d6      3 x d6
-    4d6d1    3 x d6 dropping lowest
-    20+1     1 x d20 and add one to the result
-    2d8K1-1  2 x d8 keep the lower and subtract 1
-"
-                            );
+                            let mut c = Cli::command();
+                            let h = c.render_long_help();
+                            c.write_long_help(&mut std::io::stdout())?;
+                            println!("{}", h);
                         }
                         _ => {
                             rl.add_history_entry(line)?;
                             line.split(char::is_whitespace)
-                                .filter_map(|s| parse(s).ok())
+                                .filter_map(|s| match parse(s) {
+                                    Ok(r) => Some(r),
+                                    Err(e) => {
+                                        eprintln!("{}", e);
+                                        None
+                                    }
+                                })
                                 .for_each(|r| args.print(&r, &r.roll()));
                         }
                     }
@@ -66,7 +61,7 @@ Examples:
 }
 
 fn roll_die(size: u64) -> u64 {
-    return rand::thread_rng().gen_range(1..=size);
+    return rand::rng().random_range(1..=size);
 }
 
 proptest! {
@@ -117,9 +112,8 @@ proptest! {
 ///     2d8K1-1  2 x d8 keep the lower and subtract 1
 ///
 #[derive(ClapParser)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about)]
 #[command(propagate_version = true)]
-
 struct Cli {
     /// Quiet output (just the result)
     #[structopt(short, long)]
@@ -219,7 +213,8 @@ pub struct ExprParser;
 
 fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
     let s: &str = &it.into();
-    let expr = ExprParser::parse(Rule::expression, s)?
+    let expr = ExprParser::parse(Rule::expression, s)
+        .map_err(|e| anyhow::anyhow!("Failed to parse expression '{}': {}", s, e))?
         .next()
         .expect("Unable to read expression");
 
@@ -233,17 +228,59 @@ fn parse<S: Into<String>>(it: S) -> Result<RollSpec> {
         modifier: 0,
     };
 
+    macro_rules! parse_field {
+        ($field:expr, $part:expr, $err_msg:expr) => {
+            $field = $part
+                .as_str()
+                .parse()
+                .map_err(|e| anyhow::anyhow!($err_msg, $part.as_str(), e))?
+        };
+    }
     for part in expr.into_inner() {
         match part.as_rule() {
-            Rule::n_dice => r.num = part.as_str().parse()?,
-            Rule::die_size => r.size = part.as_str().parse()?,
-            Rule::n_low_to_drop => r.drop_low = part.as_str().parse()?,
-            Rule::n_low_to_keep => r.keep_low = part.as_str().parse()?,
-            Rule::n_high_to_keep => r.keep_high = part.as_str().parse()?,
-            Rule::n_high_to_drop => r.drop_high = part.as_str().parse()?,
-            Rule::add_value => r.modifier = part.as_str().parse()?,
-            Rule::subtract_value => r.modifier = -1 * part.as_str().parse::<i64>()?,
-            Rule::junk => bail!("Unexpected input in {}: '{}'", s, part.as_str()),
+            Rule::n_dice => {
+                parse_field!(r.num, part, "Invalid number of dice '{}': {}");
+            }
+            Rule::die_size => {
+                parse_field!(r.size, part, "Invalid die size '{}': {}");
+            }
+            Rule::n_low_to_drop => {
+                parse_field!(
+                    r.drop_low,
+                    part,
+                    "Invalid number of low dice to drop '{}': {}"
+                );
+            }
+            Rule::n_low_to_keep => {
+                parse_field!(
+                    r.keep_low,
+                    part,
+                    "Invalid number of low dice to keep '{}': {}"
+                );
+            }
+            Rule::n_high_to_keep => {
+                parse_field!(
+                    r.keep_high,
+                    part,
+                    "Invalid number of high dice to keep '{}': {}"
+                );
+            }
+            Rule::n_high_to_drop => {
+                parse_field!(
+                    r.drop_high,
+                    part,
+                    "Invalid number of high dice to drop '{}': {}"
+                );
+            }
+            Rule::add_value => {
+                parse_field!(r.modifier, part, "Invalid add value '{}': {}");
+            }
+            Rule::subtract_value => {
+                r.modifier = -1
+                    * part.as_str().parse::<i64>().map_err(|e| {
+                        anyhow::anyhow!("Invalid subtract value '{}': {}", part.as_str(), e)
+                    })?
+            }
             _ => panic!("unexpected token! {}", part),
         }
     }

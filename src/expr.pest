@@ -18,6 +18,5 @@ drop_keep = _{
 add_value      =  { ASCII_DIGIT+ }
 subtract_value =  { ASCII_DIGIT+ }
 modifier       = _{ ("+" ~ add_value) | ("-" ~ subtract_value) }
-junk           =  { ANY+ }
 
-expression = { num_expr? ~ die_size ~ drop_keep? ~ modifier? ~ junk? }
+expression = { num_expr? ~ die_size ~ drop_keep? ~ modifier? }

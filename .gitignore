@@ -1,3 +1,4 @@
+.zed
 proptest-regressions/
 /target
 **/*.rs.bk
